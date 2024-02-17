@@ -89,7 +89,7 @@ else
   wget "https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/bin/udp-custom-linux-amd64" -O /root/udp/udp-custom &>/dev/null
   wget "https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/bin/udp-request-linux-amd64" -O /usr/bin/udp-request &>/dev/null
   chmod +x /root/udp/udp-custom
-  hmod +x /usr/bin/udp-request
+  chmod +x /usr/bin/udp-request
 ##################
 clear
 echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
