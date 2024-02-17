@@ -68,7 +68,7 @@ else
   # [+clean up+]
   rm -rf $udp_file &>/dev/null
   rm -rf /etc/UDPCustom/udp-custom &>/dev/null
-  # rm -rf /usr/bin/udp-request &>/dev/null
+  rm -rf /usr/bin/udp-request &>/dev/null
   rm -rf /etc/limiter.sh &>/dev/null
   rm -rf /etc/UDPCustom/limiter.sh &>/dev/null
    rm -rf /etc/cek.sh &>/dev/null
@@ -79,7 +79,7 @@ else
   rm -rf /etc/udpgw.service &>/dev/null
   systemctl stop udpgw &>/dev/null
   systemctl stop udp-custom &>/dev/null
-  # systemctl stop udp-request &>/dev/null
+  systemctl stop udp-request &>/dev/null
 
  # [+get files ⇣⇣⇣+]
   source <(curl -sSL 'https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/module/module') &>/dev/null
@@ -87,9 +87,9 @@ else
   chmod +x /etc/UDPCustom/module
 
   wget "https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/bin/udp-custom-linux-amd64" -O /root/udp/udp-custom &>/dev/null
-  # wget "https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/bin/udp-request-linux-amd64" -O /usr/bin/udp-request &>/dev/null
+  wget "https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/bin/udp-request-linux-amd64" -O /usr/bin/udp-request &>/dev/null
   chmod +x /root/udp/udp-custom
-  # chmod +x /usr/bin/udp-request
+  hmod +x /usr/bin/udp-request
 ##################
 clear
 echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
