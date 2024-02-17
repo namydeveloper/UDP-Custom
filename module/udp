@@ -564,7 +564,7 @@ EOF
   systemctl enable udp-request &>/dev/null
   systemctl start udp-request &>/dev/null
   if [[ $(systemctl is-active udp-request) = 'active' ]]; then
-    # msg -verd 'OK'
+     msg -verd 'OK'
     systemctl enable udp-request &>/dev/null
   else
     msg -verm2 'fail'
@@ -885,7 +885,7 @@ menu_udp_request() {
   fi
   ram=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
   cpu=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
-  print_center -ama " $(msg -verd 'IP:') $(msg -azu "$request_public_ip")  $(msg -verd 'Ram:') $(msg -azu "$ram") $(msg -verd 'CPU:') $(msg -azu "$cpu")"
+  # print_center -ama " $(msg -verd 'IP:') $(msg -azu "$request_public_ip")  $(msg -verd 'Ram:') $(msg -azu "$ram") $(msg -verd 'CPU:') $(msg -azu "$cpu")"
   echo " $(msg -verd ' ⇢  IP:') $(msg -azu "$request_public_ip")  $(msg -verd 'Ram:') $(msg -azu "$ram") $(msg -verd 'CPU:') $(msg -azu "$cpu")"
   msg -bar
 
@@ -940,7 +940,7 @@ menu_udp_request() {
 
 # [UDP - Custom]
 menu_udp_custom() {
-  title "\033[3;40m${a10:-•UDP Custom | UDP Request Manager} by @Namydev"
+  # title "\033[3;40m${a10:-•UDP Custom | UDP Request Manager} by @Namydev"
   title_sub "\033[3;40m${a10:-•UDP Custom Manager} by @Namydev"
   print_center -ama ' Version: 3.0'
   print_center -ama ' UDP CUSTOM'
@@ -970,7 +970,7 @@ menu_udp_custom() {
   echo " $(msg -verd "[7]") $(msg -verm2 '>') $(msg -teal "${a11:-Limit Accounts}")"
   msg -bar3
   back
-  option=$(selection_fun $num)
+  # option=$(selection_fun $num)
   read -p " ⇢  Enter your selection: " option
 
   case $option in
@@ -987,7 +987,7 @@ menu_udp_custom() {
 
 # [MAIN MENU]A
 menu_main() {
-  title "\033[3;40m${a10:-• UDP Custom | UDP Request Manager} •"
+  # title "\033[3;40m${a10:-• UDP Custom | UDP Request Manager} •"
   main_title "\033[3;40m${a10:-• UDP Custom Manager} •"
   print_center -ama 'Version: ⇢ 3.0'
   print_center -ama 'by @Namydev'
@@ -1005,7 +1005,7 @@ menu_main() {
   print_center -ama "${a12:-CHOOSE UDP CORE}"
   msg -bar3
   echo " $(msg -verd "[1]") $(msg -verm2 '>') $(msg -verd "${a6:-UDP Custom}")"
-  echo " $(msg -verd "[2]") $(msg -verm2 '>') $(msg -ama "${a8:-BACKUP}")"
+  # echo " $(msg -verd "[2]") $(msg -verm2 '>') $(msg -ama "${a8:-UDP Request}")"
   msg -bar3
   echo " $(msg -verd "[3]") $(msg -verm2 '>') $(msg -teal "${a11:-Tweak UDP Speed $(msg -verm2 '[!Caution!]')}")"
   echo " $(msg -verd "[4]") $(msg -verm2 '>') $(msg -teal "${a10:-VPS Info}")"
@@ -1022,7 +1022,7 @@ menu_main() {
     menu_udp_custom
     ;;
   2)
-    menu-backup
+     menu_udp_request
     ;;
   3)
     tweak_udp_speed
