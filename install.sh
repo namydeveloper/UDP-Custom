@@ -62,17 +62,13 @@ else
   echo ""
   echo " ⇢ Change timezone to UTC +0"
   echo " ⇢ for Africa/Accra [GH] GMT +7:00"
-  ln -fs /usr/share/zoneinfo/Africa/Accra /etc/localtime
+  ln -fs /usr/share/zoneinfo/Jakarta/Kalteng /etc/localtime
   sleep 3
 
   # [+clean up+]
   rm -rf $udp_file &>/dev/null
   rm -rf /etc/UDPCustom/udp-custom &>/dev/null
   rm -rf /usr/bin/udp-request &>/dev/null
-  rm -rf /etc/limiter.sh &>/dev/null
-  rm -rf /etc/UDPCustom/limiter.sh &>/dev/null
-   rm -rf /etc/cek.sh &>/dev/null
-  rm -rf /etc/UDPCustom/cek.sh &>/dev/null
   rm -rf /etc/UDPCustom/module &>/dev/null
   rm -rf /usr/bin/udp &>/dev/null
   rm -rf /etc/UDPCustom/udpgw.service &>/dev/null
@@ -90,26 +86,7 @@ else
   wget "https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/bin/udp-request-linux-amd64" -O /usr/bin/udp-request &>/dev/null
   chmod +x /root/udp/udp-custom
   chmod +x /usr/bin/udp-request
-##################
-clear
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "$green      Install BACKUP               $NC"
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-sleep 2
-clear
-wget https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/backup/set-br.sh &&  chmod +x set-br.sh && ./set-br.sh
-clear
 
-##################
-  wget -O /etc/limiter.sh 'https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/module/limiter.sh'
-  cp /etc/limiter.sh /etc/UDPCustom
-  chmod +x /etc/limiter.sh
-  chmod +x /etc/UDPCustom
-
-    wget -O /etc/cek.sh 'https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/module/cek.sh'
-  cp /etc/cek.sh /etc/UDPCustom
-  chmod +x /etc/cek.sh
-  chmod +x /etc/UDPCustom
   
   # [+udpgw+]
   wget -O /etc/udpgw 'https://raw.githubusercontent.com/namydeveloper/UDP-Custom/main/module/udpgw'
