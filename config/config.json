@@ -1,8 +1,17 @@
 {
-  "listen": ":36712",
-  "stream_buffer": 33554432,
-  "receive_buffer": 83886080,
+  "server": "sg1-server.my.id",
+   "listen": "$UDP_PORT",
+  "protocol": "$PROTOCOL",
+  "cert": "/etc/hysteria/hysteria.server.crt",
+  "key": "/etc/hysteria/hysteria.server.key",
+  "up": "100 Mbps",
+  "up_mbps": 100,
+  "down": "100 Mbps",
+  "down_mbps": 100,
+  "disable_udp": false,
+  "obfs": "$OBFS",
   "auth": {
-    "mode": "passwords"
-  }
+	"mode": "passwords",
+	"config": ["$PASSWORD"]
+         }
 }
