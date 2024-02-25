@@ -9,7 +9,7 @@
   "down": "100 Mbps",
   "down_mbps": 100,
   "disable_udp": false,
-  "obfs": "$OBFS",
+  "obfs": "namyudp",
   "auth": {
     "mode": "passwords"
          }
