@@ -1,6 +1,6 @@
 {
   "server": "sg1-server.my.id",
-   "listen": "$UDP_PORT",
+  "listen": ":36712",
   "protocol": "$PROTOCOL",
   "cert": "/etc/hysteria/hysteria.server.crt",
   "key": "/etc/hysteria/hysteria.server.key",
