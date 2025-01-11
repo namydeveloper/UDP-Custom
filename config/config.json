@@ -1,16 +1,8 @@
 {
-  "server": "sg1-server.my.id",
   "listen": ":36712",
-  "protocol": "udp",
-  "cert": "/etc/hysteria/hysteria.server.crt",
-  "key": "/etc/hysteria/hysteria.server.key",
-  "up": "100 Mbps",
-  "up_mbps": 100,
-  "down": "100 Mbps",
-  "down_mbps": 100,
-  "disable_udp": false,
-  "obfs": "namyudp",
+  "stream_buffer": 209715200,
+  "receive_buffer": 209715200,
   "auth": {
     "mode": "passwords"
-         }
+  }
 }
