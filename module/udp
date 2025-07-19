@@ -1,5 +1,5 @@
 #!/bin/bash
-#Version : ⇢ 4.0
+#Version : ⇢ 3.0
 udp_dir='/etc/UDPCustom'
 source $udp_dir/module
 
@@ -16,175 +16,185 @@ limiter() {
   ltr() {
     clear
     msg -bar
-    print_center -ama "LIMITER AKUN MULTI-LOGIN"
-    msg -bar
 
-    # Stop limiter jika sedang aktif
+    # Check if limiter is already running and remove from scheduled tasks if so
     for i in $(atq | awk '{print $1}'); do
-      if at -c "$i" | grep -q '/etc/limiter.sh'; then
-        atrm "$i"
-        sed -i '/limiter.sh/d' /var/spool/cron/crontabs/root &>/dev/null
-        print_center -verm2 "Limiter dihentikan"
+      if [[ ! $(at -c $i | grep '/etc/limiter.sh') = "" ]]; then
+        atrm $i
+        sed -i '/etc/limiter.sh/d' /var/spool/cron/crontabs/root
+        print_center -verd "Limiter stopped"
         enter
         return
       fi
     done
 
-    print_center -ama "Blokir pengguna yang melebihi batas koneksi"
+    # Prompt user to configure limiter
+    print_center -ama "CONFIGURE LIMITER"
+    msg -bar
+    print_center -ama "Block users when they exceed the maximum number of connections"
     msg -bar
 
-    # Input interval limiter (menit)
-    while true; do
-      read -p " Jalankan limiter tiap berapa menit: " option
+    # Set interval for running limiter
+    unset option
+    while [[ -z $option ]]; do
+      msg -nama "Run limiter every (in minutes): "
+      read option
+
       if [[ ! $option =~ ^[0-9]+$ ]]; then
-        print_center -verm2 "Masukkan angka saja!"
+        del 1
+        print_center -verm2 "Only numbers are allowed"
         sleep 2
-        continue
+        del 1
+        unset option && continue
       elif [[ $option -le 0 ]]; then
-        print_center -verm2 "Minimal 1 menit"
+        del 1
+        print_center -verm2 "Minimum time is 1 minute"
         sleep 2
-        continue
+        del 1
+        unset option && continue
       fi
-      echo "$option" > /etc/UDPCustom/limit
-      break
+
+      del 1
+      echo -e "$(msg -nama "Run limiter every: ") $(msg -verd "$option minutes")"
+      echo "$option" >${udp_dir}/limit
     done
 
     msg -bar
-    print_center -ama "Auto-unblock pengguna (isi 0 untuk manual)"
+
+    # Set interval for automatically unblocking users blocked by the limiter
+    print_center -ama "Users blocked by the limiter will be unlocked automatically (enter 0 for manual unlock)"
     msg -bar
 
-    while true; do
-      read -p " Unblock tiap berapa menit: " option
+    unset option
+    while [[ -z $option ]]; do
+      msg -nama "Unblock users every (in minutes): "
+      read option
+
       if [[ ! $option =~ ^[0-9]+$ ]]; then
-        print_center -verm2 "Masukkan angka saja!"
+        tput cuu1 && tput dl1
+        print_center -verm2 "Only numbers are allowed"
         sleep 2
-        continue
+        tput cuu1 && tput dl1
+        unset option && continue
       fi
-      echo "$option" > /etc/UDPCustom/unlimit
-      break
+
+      tput cuu1 && tput dl1
+      [[ $option -le 0 ]] && echo -e "$(msg -nama "Unblock: ") $(msg -verd "manual")" || echo -e "$(msg -nama "Unblock users every: ") $(msg -verd "$option minutes")"
+      echo "$option" >${udp_dir}/unlimit
     done
 
-    # Jalankan limiter
-    chmod +x /etc/limiter.sh
-    nohup /etc/limiter.sh &>/dev/null &
+    # Start limiter with new settings
+    nohup ${udp_dir}/limiter.sh &>/dev/null &
     msg -bar
-    print_center -verd "Limiter aktif"
+    print_center -verd "Limiter started"
     enter
   }
 
   l_exp() {
     clear
     msg -bar
-    if grep -qw 'limiter.sh --ssh' /var/spool/cron/crontabs/root; then
-      sed -i '/limiter.sh --ssh/d' /var/spool/cron/crontabs/root
-      print_center -verm2 "Limiter kadaluarsa dimatikan"
+    l_cron=$(cat /var/spool/cron/crontabs/root | grep -w 'limiter.sh' | grep -w 'ssh')
+    if [[ -z "$l_cron" ]]; then
+      print_center -ama '0 1 * * * /etc/limiter.sh --ssh' >>/var/spool/cron/crontabs/root
+      print_center -verd "${a82:-scheduled expiration limiter\nwill be executed every day at 1 am\naccording to the time scheduled on the server}"
     else
-      echo "0 1 * * * /etc/limiter.sh --ssh" >> /var/spool/cron/crontabs/root
-      print_center -verd "Limiter kadaluarsa diaktifkan (jam 1 pagi)"
+      sed -i '/limiter.sh --ssh/d' /var/spool/cron/crontabs/root
+      print_center -verm2 "${a83:-expired limiter stopped}"
     fi
     enter
+    return
   }
 
   log() {
     clear
     msg -bar
-    print_center -ama "LOG LIMITER"
+    print_center -ama "${a84:-LIMITER REGISTRY}"
     msg -bar
     [[ ! -e /etc/limit.log ]] && touch /etc/limit.log
-
-    if [[ ! -s /etc/limit.log ]]; then
-      print_center -ama "Belum ada catatan pelanggaran"
+    if [[ -z $(cat /etc/limit.log) ]]; then
+      print_center -ama "${a85:-no account limiter record}"
       msg -bar
       sleep 2
       return
     fi
-
-    cat /etc/limit.log
+    msg -teal "$(cat /etc/limit.log)"
     msg -bar
-    echo -e " Tekan ENTER untuk kembali | Ketik 0 untuk hapus log"
-    read -rp " Pilih: " input
-    [[ "$input" == "0" ]] && echo "" > /etc/limit.log
+    print_center -ama "►► ${a86:-Press enter to continue...} ◄◄"
+    print_center -ama "►► ${a87:-0 to clear record} ◄◄"
+    read option
+    [[ $option = "0" ]] && print_center -ama "" >/etc/limit.log
   }
 
-  [[ $(grep -w 'limiter.sh --ssh' /var/spool/cron/crontabs/root) ]] && lim_e="[AKTIF]" || lim_e="[NONAKTIF]"
+  [[ $(cat /var/spool/cron/crontabs/root | grep -w 'limiter.sh' | grep -w 'ssh') ]] && lim_e=$(msg -verd "[ON]") || lim_e=$(msg -verm2 "[OFF]")
 
   clear
   msg -bar
-  print_center -ama "⚙️  MENU LIMITER"
+  print_center -ama "${a11:-ACCOUNT LIMITER}"
   msg -bar
-  menu_func "Limiter Multi-Login" "Limiter Kadaluarsa $lim_e" "Log Pelanggaran"
+  menu_func "${a64:-MULTI-LOGIN LIMITER}" "${a65:-EXPIRED LIMITER} $lim_e" "${a66:-LIMITER LOG}"
   back
-  read -p " Pilih opsi: " option
+  msg -ne " ${a67:-option}: "
+  read option
   case $option in
-    1) ltr ;;
-    2) l_exp ;;
-    3) log ;;
-    0) return ;;
-    *) print_center -verm2 "Opsi tidak valid"; sleep 1 ;;
+  1) ltr ;;
+  2) l_exp ;;
+  3) log ;;
+  0) return ;;
   esac
 }
-
 
 #======= CONFIGURATION OF SSH UDP ACCOUNTS =======
 
 data_user() {
-  cat_users=$(grep 'home' /etc/passwd | grep 'false' | grep -vE 'syslog|::/|hwid|token')
-  [[ -z "$cat_users" ]] && print_center -verm2 "⛔ Tidak ada user SSH terdaftar!" && return 1
-
-  # Header Tabel
-  dat_us=$(printf '%-13s%-14s%-12s%-6s%-6s%s' "User" "Pass" "Kadaluarsa" "Hari" 'Lmt' 'Status')
+  cat_users=$(cat "/etc/passwd" | grep 'home' | grep 'false' | grep -v 'syslog' | grep -v '::/' | grep -v 'hwid\|token')
+  [[ -z "$(echo "${cat_users}" | head -1)" ]] && print_center -verm2 "${a96:-NO REGISTERED SSH USERS}" && return 1
+  dat_us=$(printf '%-13s%-14s%-10s%-4s%-6s%s' "${a48:-User}" "${a49:-Pass}" "${a97:-Date}" "${a98:-Days}" 'Lmt' 'Stat')
   msg -azu "  $dat_us"
   msg -bar
 
   i=1
-  while read -r line; do
-    u=$(echo "$line" | cut -d ':' -f1)
 
-    # Tanggal Expired
-    fecha=$(chage -l "$u" | grep "Account expires" | cut -d: -f2 | sed 's/^ //')
-    if [[ "$fecha" == "never" || -z "$fecha" ]]; then
-      tanggal_exp="Tidak Ada"
-      exp_day="X"
+  while read line; do
+    u=$(echo "$line" | awk -F ':' '{print $1}')
+
+    fecha=$(chage -l "$u" | sed -n '4p' | awk -F ': ' '{print $2}')
+
+    mes_dia=$(echo $fecha | awk -F ',' '{print $1}' | sed 's/ //g')
+    ano=$(echo $fecha | awk -F ', ' '{printf $2}' | cut -c 3-)
+    us=$(printf '%-12s' "$u")
+
+    pass=$(echo "$line" | awk -F ':' '{print $5}' | cut -d ',' -f2)
+    [[ "${#pass}" -gt '12' ]] && pass="${a99:-Discount}"
+    pass="$(printf '%-12s' "$pass")"
+
+    unset stat
+    if [[ $(passwd --status $u | cut -d ' ' -f2) = "P" ]]; then
+      stat="$(msg -verd "ULK")"
     else
-      # Konversi ke format DD-MM-YYYY
-      tanggal_exp=$(date -d "$fecha" '+%d-%m-%Y' 2>/dev/null)
-      if [[ -z "$tanggal_exp" ]]; then
-        tanggal_exp="INVALID"
-        exp_day="X"
+      stat="$(msg -verm2 "BLK")"
+    fi
+
+    Limit=$(echo "$line" | awk -F ':' '{print $5}' | cut -d ',' -f1)
+    [[ "${#Limit}" = "1" ]] && Limit=$(printf '%2s%-4s' "$Limit") || Limit=$(printf '%-6s' "$Limit")
+
+    echo -ne "$(msg -verd "$i")$(msg -verm2 "-")$(msg -azu "${us}") $(msg -azu "${pass}")"
+    if [[ $(echo $fecha | awk '{print $2}') = "" ]]; then
+      exp="$(printf '%8s%-2s' '[X]')"
+      exp+="$(printf '%-6s' '[X]')"
+      echo " $(msg -verm2 "$fecha")$(msg -verd "$exp")$(echo -e "$stat")"
+    else
+      if [[ $(date +%s) -gt $(date '+%s' -d "${fecha}") ]]; then
+        exp="$(printf '%-5s' "Exp")"
+        echo " $(msg -verm2 "$mes_dia/$ano")  $(msg -verm2 "$exp")$(msg -ama "$Limit")$(echo -e "$stat")"
       else
-        exp_sec=$(date +%s -d "$fecha")
-        now_sec=$(date +%s)
-        exp_day=$(( (exp_sec - now_sec) / 86400 ))
-        [[ $exp_day -lt 0 ]] && exp_day="Exp"
+        EXPTIME="$(($(($(date '+%s' -d "${fecha}") - $(date +%s))) / 86400))"
+        [[ "${#EXPTIME}" = "1" ]] && exp="$(printf '%2s%-3s' "$EXPTIME")" || exp="$(printf '%-5s' "$EXPTIME")"
+        echo " $(msg -verm2 "$mes_dia/$ano")  $(msg -verd "$exp")$(msg -ama "$Limit")$(echo -e "$stat")"
       fi
     fi
-
-    # Format nama user & password
-    us=$(printf '%-12s' "$u")
-    pass=$(echo "$line" | cut -d ':' -f5 | cut -d ',' -f2)
-    [[ "${#pass}" -gt 12 ]] && pass="********"
-    pass=$(printf '%-12s' "$pass")
-
-    # Status (ULK/BLK)
-    [[ "$(passwd --status "$u" 2>/dev/null | cut -d ' ' -f2)" == "P" ]] && stat=$(msg -verd "ULK") || stat=$(msg -verm2 "BLK")
-
-    # Limit akun
-    Limit=$(echo "$line" | cut -d ':' -f5 | cut -d ',' -f1)
-    [[ -z "$Limit" ]] && Limit="0"
-    Limit=$(printf '%-6s' "$Limit")
-
-    # Output per user
-    echo -ne "$(msg -verd "$i")$(msg -verm2 "-")$(msg -azu "$us") $(msg -azu "$pass")"
-    if [[ "$exp_day" == "X" || "$exp_day" == "Exp" ]]; then
-      echo " $(msg -verm2 "$tanggal_exp")  $(msg -verm2 "$exp_day")$(msg -ama "$Limit")$stat"
-    else
-      exp_fmt=$(printf '%-4s' "$exp_day")
-      echo " $(msg -azu "$tanggal_exp")  $(msg -verd "$exp_fmt")$(msg -ama "$Limit")$stat"
-    fi
-    ((i++))
-  done <<< "$cat_users"
+    let i++
+  done <<<"$cat_users"
 }
-
 
 # ======== user Details ====
 
@@ -424,28 +434,17 @@ remove_user() {
 #========create client =============
 
 add_user() {
-  local Fecha pass osl_v valid
   Fecha=$(date +%d-%m-%y-%R)
-
-  # Cek apakah user sudah ada
-  if getent passwd "$1" > /dev/null; then
-    return 1
-  fi
-
-  # Tanggal kedaluwarsa user
-  valid=$(date '+%C%y-%m-%d' -d "+$3 days")
-
-  # Cek versi OpenSSL untuk pemilihan algoritma
+  [[ $(cat /etc/passwd | grep $1: | grep -vi [a-z]$1 | grep -v [0-9]$1 >/dev/null) ]] && return 1
+  valid=$(date '+%C%y-%m-%d' -d " +$3 days")
   osl_v=$(openssl version | awk '{print $2}')
   osl_v=${osl_v:0:5}
-  if [[ "$osl_v" == "1.1.1" ]]; then
-    pass=$(openssl passwd -6 "$2")
+  if [[ $osl_v = '1.1.1' ]]; then
+    pass=$(openssl passwd -6 $2)
   else
-    pass=$(openssl passwd -1 "$2")
+    pass=$(openssl passwd -1 $2)
   fi
-
-  # Buat user
-  useradd -M -s /bin/false -e "${valid}" -K PASS_MAX_DAYS="$3" -p "${pass}" -c "$4,$2" "$1" &>/dev/null
+  useradd -M -s /bin/false -e ${valid} -K PASS_MAX_DAYS=$3 -p ${pass} -c $4,$2 $1 &>/dev/null
   msj=$?
 }
 
@@ -453,7 +452,7 @@ new_user() {
   clear
   active_users=('' $(show_users))
   msg -bar
-  print_center -ama "➕ ${a6:-CREATE USER ACCOUNT}"
+  print_center -ama "${a6:-CREATE USER ACCOUNT}"
   msg -bar
   data_user
   back
@@ -461,71 +460,69 @@ new_user() {
   while true; do
     msg -ne " ${a41:-Username}: "
     read nameuser
-   nameuser="$(echo "$nameuser" | iconv -f utf8 -t ascii//TRANSLIT | tr -cd 'a-zA-Z0-9' | tr '[:upper:]' '[:lower:]')"
-
-    nameuser="$(echo "$nameuser" | sed -e 's/[^a-z0-9]//ig')"
-
-    if [[ -z "$nameuser" ]]; then
+    nameuser="$(echo $nameuser | sed 'y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚñÑçÇªº/aAaAaAaAeEeEiIoOoOoOuUnNcCao/')"
+    nameuser="$(echo $nameuser | sed -e 's/[^a-z0-9 -]//ig')"
+    if [[ -z $nameuser ]]; then
       err_fun 1 && continue
-    elif [[ "$nameuser" == "0" ]]; then
+    elif [[ "${nameuser}" = "0" ]]; then
       return
-    elif [[ "${#nameuser}" -lt 4 ]]; then
+    elif [[ "${#nameuser}" -lt "4" ]]; then
       err_fun 2 && continue
-    elif [[ "${#nameuser}" -gt 12 ]]; then
+    elif [[ "${#nameuser}" -gt "12" ]]; then
       err_fun 3 && continue
-    elif echo "${active_users[@]}" | grep -wq "$nameuser"; then
+    elif [[ "$(echo ${active_users[@]} | grep -w "$nameuser")" ]]; then
       err_fun 14 && continue
     fi
     break
   done
 
   while true; do
-    msg -ne " ${a42:-Password}: "
-    read -r userpass
-    userpass="$(echo "$userpass" | sed 'y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚñÑçÇªº/aAaAaAaAeEeEiIoOoOuUnNcCao/')"
-    if [[ -z "$userpass" ]]; then
+    msg -ne " ${a42:-Password}"
+    read -p ": " userpass
+    userpass="$(echo $userpass | sed 'y/áÁàÀãÃâÂéÉêÊíÍóÓõÕôÔúÚñÑçÇªº/aAaAaAaAeEeEiIoOoOoOuUnNcCao/')"
+    if [[ -z $userpass ]]; then
       err_fun 4 && continue
-    elif [[ "${#userpass}" -lt 4 ]]; then
+    elif [[ "${#userpass}" -lt "4" ]]; then
       err_fun 5 && continue
-    elif [[ "${#userpass}" -gt 12 ]]; then
+    elif [[ "${#userpass}" -gt "12" ]]; then
       err_fun 6 && continue
     fi
     break
   done
 
   while true; do
-    msg -ne " ${a43:-Number of Days}: "
-    read -r userdays
+    msg -ne " ${a43:-Number of Days}"
+    read -p ": " userdays
     if [[ -z "$userdays" ]]; then
       err_fun 7 && continue
-    elif ! [[ "$userdays" =~ ^[0-9]+$ ]]; then
+    elif [[ "$userdays" != +([0-9]) ]]; then
       err_fun 8 && continue
-    elif (( userdays > 360 )); then
+    elif [[ "$userdays" -gt "360" ]]; then
       err_fun 9 && continue
     fi
     break
   done
 
   while true; do
-    msg -ne " ${a44:-Connection Limit}: "
-    read -r limiteuser
+    msg -ne " ${a44:-Connection Limit}"
+    read -p ": " limiteuser
     if [[ -z "$limiteuser" ]]; then
       err_fun 11 && continue
-    elif ! [[ "$limiteuser" =~ ^[0-9]+$ ]]; then
+    elif [[ "$limiteuser" != +([0-9]) ]]; then
       err_fun 12 && continue
-    elif (( limiteuser > 999 )); then
+    elif [[ "$limiteuser" -gt "999" ]]; then
       err_fun 13 && continue
     fi
     break
   done
 
-  add_user "$nameuser" "$userpass" "$userdays" "$limiteuser"
+  add_user "${nameuser}" "${userpass}" "${userdays}" "${limiteuser}"
   clear
   msg -bar
-  if [[ $msj -eq 0 ]]; then
-    print_center -verd "${a45:-✅ User Created Successfully}"
+  if [[ $msj = 0 ]]; then
+    print_center -verd "${a45:-User Created Successfully}"
   else
-    print_center -verm2 "${a46:-❌ Error, user not created}"
+    print_center -verm2 "${a46:-Error, user not created}"
     enter
     return 1
   fi
@@ -536,10 +533,9 @@ new_user() {
   msg -ne " ${a49:-Password}: " && msg -ama "         $userpass"
   msg -ne " ${a50:-Number of Days}: " && msg -ama "   $userdays"
   msg -ne " ${a44:-Connection Limit}: " && msg -ama " $limiteuser"
-  msg -ne " ${a51:-Expiration Date}: " && msg -ama "$(date '+%F' -d "+$userdays days")"
+  msg -ne " ${a51:-Expiration Date}: " && msg -ama "$(date "+%F" -d " + $userdays days")"
   enter
 }
-
 
 #======= CONFIGURATION OF UDP-CUSTOM & UDP-REQUEST ========
 
@@ -586,49 +582,35 @@ uninstall_udp_manager() {
   title "${a32:-Uninstall UDP-Manager & Binaries}"
   read -rp " $(msg -ama "${a33:-Do you wish to continue? [Y/n]}:") " -e -i Y UNINS
   [[ $UNINS != @(Y|y|S|s) ]] && return
-
-  # Stop and disable all services
   systemctl stop udp-custom &>/dev/null
   systemctl disable udp-custom &>/dev/null
-  systemctl stop udp-request &>/dev/null
-  systemctl disable udp-request &>/dev/null
-  systemctl stop autostart &>/dev/null
-  systemctl disable autostart &>/dev/null
-  systemctl stop udpgw &>/dev/null
-  systemctl disable udpgw &>/dev/null
-
-  # Remove all service files
+  # systemctl stop udp-request &>/dev/null
+  # systemctl disable udp-request &>/dev/null
+  # systemctl stop autostart &>/dev/null
+  # systemctl disable autostart &>/dev/null
   rm -rf /etc/systemd/system/udp-custom.service
-  rm -rf /etc/systemd/system/udp-request.service
-  rm -rf /etc/systemd/system/autostart.service
-  rm -rf /etc/systemd/system/udpgw.service
-  rm -rf /etc/autostart.service
-
-  # Remove all binary and config files
+  # rm -rf /etc/systemd/system/udp-request.service
+  # rm -rf /etc/systemd/system/autostart.service
   rm -rf /usr/bin/udp-custom
-  rm -rf /usr/bin/udp-request
-  rm -rf /usr/bin/udpgw
-  rm -rf /usr/bin/udp
-
   rm -rf /root/udp/udp-custom
-  rm -rf /root/udp/udp-request
+  # rm -rf /root/udp/udp-request
+  # rm -rf /usr/bin/udp-request
   rm -rf /root/udp/config.json
-
   rm -rf /etc/UDPCustom/udp-custom
-  rm -rf /etc/UDPCustom/autostart
-  rm -rf /etc/UDPCustom/autostart.service
-  rm -rf /etc/UDPCustom
-
-  rm -rf /etc/autostart
-
-  # Optional cleanup
-  del 1 2>/dev/null
-
+  # rm -rf /usr/bin/udp-request
+  # rm -rf /etc/UDPCustom/autostart.service
+  # rm -rf /etc/UDPCustom/autostart
+  # rm -rf /etc/autostart.service
+  # rm -rf /etc/autostart
+  rm -rf /usr/bin/udpgw
+  rm -rf /etc/systemd/system/udpgw.service
+  systemctl stop udpgw &>/dev/null
+  del 1
   print_center -ama "${a34:-Uninstallation completed!}"
+  rm -rf /usr/bin/udp
   enter
   exit
 }
-
 
 reset_udp_request() {
   if [[ $(systemctl is-active udp-request) = 'active' ]]; then
